@@ -17,6 +17,7 @@ export default function Home() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
 
   useEffect(() => {
     // Create the Supabase client lazily on the client
@@ -117,8 +118,16 @@ export default function Home() {
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
           {/* Header */}
           <div className="bg-gradient-to-r from-blue-600 to-indigo-600 px-8 py-6">
-            <h1 className="text-3xl font-bold text-white">My To-Do List</h1>
-            <p className="text-blue-100 mt-1">Stay organized and productive</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-3xl font-bold text-white">My To-Do List</h1>
+                <p className="text-blue-100 mt-1">Stay organized and productive</p>
+              </div>
+              <div className="text-right">
+                <div className="text-sm text-blue-100">Tasks</div>
+                <div className="text-2xl font-semibold text-white">{todos.length}</div>
+              </div>
+            </div>
           </div>
 
           {/* Content */}
@@ -135,19 +144,36 @@ export default function Home() {
               <div className="flex items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
               </div>
-            ) : (
-              <TodoList
-                todos={todos}
-                onToggleTodo={toggleTodo}
-                onDeleteTodo={deleteTodo}
-              />
-            )}
-          </div>
-        </div>
+            setAdding(true);
+            try {
+              const supabase = getSupabase();
 
-        {/* Footer */}
-        <footer className="text-center mt-8 text-blue-900 text-sm">
-          <p>© 2024 To-Do List App. Built with Next.js and Supabase.</p>
+              // return the inserted row so we can update UI immediately
+              const { data, error: insertError } = await supabase
+                .from('todos')
+                .insert([{ title, description, completed: false }])
+                .select()
+                .single();
+
+              if (insertError) throw insertError;
+
+              // If we got the created row back, prepend it to UI immediately
+              if (data) {
+                setTodos((prev) => [data as Todo, ...prev]);
+                return;
+              }
+
+              // Fallback: re-fetch all todos
+              await fetchTodos(supabase);
+            } catch (err) {
+              const errorMessage = err instanceof Error ? err.message : 'Failed to add todo';
+              setError(errorMessage);
+              console.error('Error adding todo:', err);
+              // clear error after a short delay so the UI isn't blocked forever
+              setTimeout(() => setError(null), 6000);
+            } finally {
+              setAdding(false);
+            }
         </footer>
       </div>
     </main>
