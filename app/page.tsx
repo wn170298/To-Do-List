@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { getSupabase } from '@/lib/supabase';
 import TodoForm from '@/components/TodoForm';
 import TodoList from '@/components/TodoList';
 
@@ -19,8 +19,10 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchTodos();
-    
+    // Create the Supabase client lazily on the client
+    const supabase = getSupabase();
+    fetchTodos(supabase);
+
     // Subscribe to real-time updates
     const subscription = supabase
       .channel('todos')
@@ -28,7 +30,7 @@ export default function Home() {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'todos' },
         () => {
-          fetchTodos();
+          fetchTodos(supabase);
         }
       )
       .subscribe();
@@ -38,7 +40,8 @@ export default function Home() {
     };
   }, []);
 
-  const fetchTodos = async () => {
+  const fetchTodos = async (supabaseClient?: any) => {
+    const supabase = supabaseClient ?? getSupabase();
     try {
       setLoading(true);
       setError(null);
@@ -60,12 +63,13 @@ export default function Home() {
 
   const addTodo = async (title: string, description: string) => {
     try {
+      const supabase = getSupabase();
       const { error: insertError } = await supabase
         .from('todos')
         .insert([{ title, description, completed: false }]);
 
       if (insertError) throw insertError;
-      await fetchTodos();
+      await fetchTodos(supabase);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to add todo';
       setError(errorMessage);
@@ -75,13 +79,14 @@ export default function Home() {
 
   const toggleTodo = async (id: string, completed: boolean) => {
     try {
+      const supabase = getSupabase();
       const { error: updateError } = await supabase
         .from('todos')
         .update({ completed: !completed })
         .eq('id', id);
 
       if (updateError) throw updateError;
-      await fetchTodos();
+      await fetchTodos(supabase);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to update todo';
       setError(errorMessage);
@@ -91,13 +96,14 @@ export default function Home() {
 
   const deleteTodo = async (id: string) => {
     try {
+      const supabase = getSupabase();
       const { error: deleteError } = await supabase
         .from('todos')
         .delete()
         .eq('id', id);
 
       if (deleteError) throw deleteError;
-      await fetchTodos();
+      await fetchTodos(supabase);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to delete todo';
       setError(errorMessage);
