@@ -17,7 +17,6 @@ export default function Home() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [adding, setAdding] = useState(false);
 
   useEffect(() => {
     // Create the Supabase client lazily on the client
@@ -63,7 +62,6 @@ export default function Home() {
   };
 
   const addTodo = async (title: string, description: string) => {
-    setAdding(true);
     try {
       const supabase = getSupabase();
 
@@ -90,8 +88,6 @@ export default function Home() {
       console.error('Error adding todo:', err);
       // clear error after a short delay so the UI isn't blocked forever
       setTimeout(() => setError(null), 6000);
-    } finally {
-      setAdding(false);
     }
   };
 
