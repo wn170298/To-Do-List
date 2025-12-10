@@ -136,9 +136,19 @@ export default function Home() {
                 <h1 className="text-3xl font-bold text-white">My To-Do List</h1>
                 <p className="text-blue-100 mt-1">Stay organized and productive</p>
               </div>
-              <div className="text-right">
-                <div className="text-sm text-blue-100">Tasks</div>
-                <div className="text-2xl font-semibold text-white">{todos.length}</div>
+              <div className="grid grid-cols-3 gap-6 text-right">
+                <div>
+                  <div className="text-xs text-blue-100 uppercase tracking-wide">Total</div>
+                  <div className="text-3xl font-bold text-white">{todos.length}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-blue-100 uppercase tracking-wide">Active</div>
+                  <div className="text-3xl font-bold text-white">{todos.filter(t => !t.completed).length}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-blue-100 uppercase tracking-wide">Completed</div>
+                  <div className="text-3xl font-bold text-white">{todos.filter(t => t.completed).length}</div>
+                </div>
               </div>
             </div>
           </div>
