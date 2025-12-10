@@ -63,18 +63,35 @@ export default function Home() {
   };
 
   const addTodo = async (title: string, description: string) => {
+    setAdding(true);
     try {
       const supabase = getSupabase();
-      const { error: insertError } = await supabase
+
+      // return the inserted row so we can update UI immediately
+      const { data, error: insertError } = await supabase
         .from('todos')
-        .insert([{ title, description, completed: false }]);
+        .insert([{ title, description, completed: false }])
+        .select()
+        .single();
 
       if (insertError) throw insertError;
+
+      // If we got the created row back, prepend it to UI immediately
+      if (data) {
+        setTodos((prev) => [data as Todo, ...prev]);
+        return;
+      }
+
+      // Fallback: re-fetch all todos
       await fetchTodos(supabase);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to add todo';
       setError(errorMessage);
       console.error('Error adding todo:', err);
+      // clear error after a short delay so the UI isn't blocked forever
+      setTimeout(() => setError(null), 6000);
+    } finally {
+      setAdding(false);
     }
   };
 
@@ -144,36 +161,19 @@ export default function Home() {
               <div className="flex items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
               </div>
-            setAdding(true);
-            try {
-              const supabase = getSupabase();
+            ) : (
+              <TodoList
+                todos={todos}
+                onToggleTodo={toggleTodo}
+                onDeleteTodo={deleteTodo}
+              />
+            )}
+          </div>
+        </div>
 
-              // return the inserted row so we can update UI immediately
-              const { data, error: insertError } = await supabase
-                .from('todos')
-                .insert([{ title, description, completed: false }])
-                .select()
-                .single();
-
-              if (insertError) throw insertError;
-
-              // If we got the created row back, prepend it to UI immediately
-              if (data) {
-                setTodos((prev) => [data as Todo, ...prev]);
-                return;
-              }
-
-              // Fallback: re-fetch all todos
-              await fetchTodos(supabase);
-            } catch (err) {
-              const errorMessage = err instanceof Error ? err.message : 'Failed to add todo';
-              setError(errorMessage);
-              console.error('Error adding todo:', err);
-              // clear error after a short delay so the UI isn't blocked forever
-              setTimeout(() => setError(null), 6000);
-            } finally {
-              setAdding(false);
-            }
+        {/* Footer */}
+        <footer className="text-center mt-8 text-blue-900 text-sm">
+          <p>© 2024 To-Do List App. Built with Next.js and Supabase.</p>
         </footer>
       </div>
     </main>
